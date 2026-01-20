@@ -825,33 +825,35 @@
                 });
                 
                 const availableCount = subject.hours - usedCount;
+                const color = getSubjectColor(subject.id);
                 
-                if (availableCount > 0) {
-                    const color = getSubjectColor(subject.id);
+                tilesHtml += `
+                    <div class="subject-item" style="margin-bottom: 15px;">
+                        <div class="subject-header">
+                            <div class="subject-info">
+                                <div class="subject-name">${subject.name}</div>
+                                <div class="subject-teacher">Вчитель: ${subject.teacher} • Доступно: ${availableCount} з ${subject.hours}</div>
+                            </div>
+                        </div>
+                        <div class="tiles-container" data-subject-id="${subject.id}">
+                `;
+                
+                for (let i = 0; i < availableCount; i++) {
                     tilesHtml += `
-                        <div class="subject-item" style="margin-bottom: 15px;">
-                            <div class="subject-header">
-                                <div class="subject-info">
-                                    <div class="subject-name">${subject.name}</div>
-                                    <div class="subject-teacher">Вчитель: ${subject.teacher} • Доступно: ${availableCount} з ${subject.hours}</div>
-                                </div>
-                            </div>
-                            <div class="tiles-container" data-subject-id="${subject.id}">
+                        <div class="lesson-tile" 
+                             draggable="true"
+                             data-subject-id="${subject.id}"
+                             style="background: ${color};">
+                            ${subject.name}
+                        </div>
                     `;
-                    
-                    for (let i = 0; i < availableCount; i++) {
-                        tilesHtml += `
-                            <div class="lesson-tile" 
-                                 draggable="true"
-                                 data-subject-id="${subject.id}"
-                                 style="background: ${color};">
-                                ${subject.name}
-                            </div>
-                        `;
-                    }
-                    
-                    tilesHtml += '</div></div>';
                 }
+                
+                if (availableCount === 0) {
+                    tilesHtml += `<div style="color: #6c757d; font-size: 12px; padding: 5px;">Всі уроки розміщені в розкладі</div>`;
+                }
+                
+                tilesHtml += '</div></div>';
             });
             
             tilesHtml += '</div>';
