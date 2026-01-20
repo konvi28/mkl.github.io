@@ -1073,6 +1073,11 @@
             
             const schedule = schedules[classId];
             
+            // Зберігаємо позицію прокрутки
+            const scheduleWrapper = document.querySelector('.schedule-wrapper');
+            const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
+            const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
+            
             // Якщо переміщуємо з розкладу
             if (fromSchedule && originalSlot) {
                 const oldKey = `${originalSlot.day}-${originalSlot.lesson}`;
@@ -1089,6 +1094,15 @@
             
             renderSchedules();
             renderSubjects();
+            
+            // Відновлюємо позицію прокрутки після рендерингу
+            setTimeout(() => {
+                const newScheduleWrapper = document.querySelector('.schedule-wrapper');
+                if (newScheduleWrapper) {
+                    newScheduleWrapper.scrollTop = scrollTop;
+                    newScheduleWrapper.scrollLeft = scrollLeft;
+                }
+            }, 0);
         }
 
         function handleContainerDragOver(e) {
@@ -1111,9 +1125,23 @@
             const key = `${day}-${lesson}`;
             
             if (schedules[classId] && schedules[classId][key]) {
+                // Зберігаємо позицію прокрутки
+                const scheduleWrapper = document.querySelector('.schedule-wrapper');
+                const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
+                const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
+                
                 delete schedules[classId][key];
                 renderSchedules();
                 renderSubjects();
+                
+                // Відновлюємо позицію прокрутки після рендерингу
+                setTimeout(() => {
+                    const newScheduleWrapper = document.querySelector('.schedule-wrapper');
+                    if (newScheduleWrapper) {
+                        newScheduleWrapper.scrollTop = scrollTop;
+                        newScheduleWrapper.scrollLeft = scrollLeft;
+                    }
+                }, 0);
             }
         }
 
