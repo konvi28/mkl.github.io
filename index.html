@@ -274,6 +274,7 @@
             font-size: 12px;
             font-weight: 600;
             user-select: none;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
 
         .lesson-tile:hover {
@@ -425,11 +426,13 @@
             font-weight: 600;
             font-size: 14px;
             margin-bottom: 4px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
 
         .lesson-card-teacher {
             font-size: 12px;
             opacity: 0.9;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
 
         .delete-lesson-btn {
@@ -470,6 +473,26 @@
             padding: 15px;
             background: #f8f9fa;
             border-radius: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .available-tiles-section::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .available-tiles-section::-webkit-scrollbar-track {
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+        
+        .available-tiles-section::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        .available-tiles-section::-webkit-scrollbar-thumb:hover {
+            background: #5568d3;
         }
 
         .available-tiles-section h2 {
