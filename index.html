@@ -1512,93 +1512,205 @@
                 // Створюємо workbook
                 const wb = XLSX.utils.book_new();
 
-                // Створюємо окремий аркуш для кожного класу
-                classes.forEach(cls => {
-                    const schedule = schedules[cls.id] || {};
-                    
-                    // Підготовка даних для таблиці
-                    const data = [];
-                    
-                    // Заголовок
-                    data.push(['День тижня', 'Урок', 'Предмет', 'Вчитель']);
-                    
-                    // Заповнюємо дані
-                    days.forEach((day, dayIndex) => {
-                        for (let i = 1; i <= lessons; i++) {
-                            const key = `${dayIndex}-${i-1}`;
-                            const lesson = schedule[key];
-                            
-                            if (lesson) {
-                                data.push([
-                                    day,
-                                    `Урок ${i}`,
-                                    lesson.name,
-                                    lesson.teacher
-                                ]);
-                            } else {
-                                data.push([
-                                    day,
-                                    `Урок ${i}`,
-                                    '',
-                                    ''
-                                ]);
-                            }
-                        }
-                    });
-
-                    // Створюємо worksheet
-                    const ws = XLSX.utils.aoa_to_sheet(data);
-
-                    // Встановлюємо ширину колонок
-                    ws['!cols'] = [
-                        { wch: 15 }, // День тижня
-                        { wch: 10 }, // Урок
-                        { wch: 25 }, // Предмет
-                        { wch: 25 }  // Вчитель
-                    ];
-
-                    // Додаємо worksheet до workbook
-                    XLSX.utils.book_append_sheet(wb, ws, cls.name);
-                });
-
-                // Створюємо зведений аркуш з усіма класами
-                const summaryData = [];
+                // Створюємо головну таблицю - точна копія таблиці розкладу
+                const data = [];
+                
+                // Заголовок
                 const headerRow = ['День', 'Урок'];
                 classes.forEach(cls => headerRow.push(cls.name));
-                summaryData.push(headerRow);
+                data.push(headerRow);
 
+                // Заповнюємо дані по днях та урокам
                 days.forEach((day, dayIndex) => {
                     for (let i = 1; i <= lessons; i++) {
-                        const row = [day, `Урок ${i}`];
+                        const row = [];
                         
+                        // Додаємо день тільки для першого уроку
+                        if (i === 1) {
+                            row.push(day);
+                        } else {
+                            row.push(''); // Порожня клітинка для об'єднання
+                        }
+                        
+                        // Номер уроку
+                        row.push(i);
+                        
+                        // Для кожного класу
                         classes.forEach(cls => {
                             const key = `${dayIndex}-${i-1}`;
                             const lesson = schedules[cls.id][key];
-                            row.push(lesson ? `${lesson.name}\n(${lesson.teacher})` : '');
+                            
+                            if (lesson) {
+                                // Перевіряємо чи це масив уроків (підгрупи)
+                                if (Array.isArray(lesson)) {
+                                    // Об'єднуємо всі уроки в одну клітинку
+                                    const lessonsText = lesson.map(l => `${l.name}\n(${l.teacher})`).join('\n---\n');
+                                    row.push(lessonsText);
+                                } else {
+                                    // Один урок
+                                    row.push(`${lesson.name}\n(${lesson.teacher})`);
+                                }
+                            } else {
+                                row.push('');
+                            }
                         });
                         
-                        summaryData.push(row);
+                        data.push(row);
                     }
                 });
 
-                const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-                
-                // Ширина колонок для зведеного аркушу
-                const colWidths = [{ wch: 15 }, { wch: 10 }];
-                classes.forEach(() => colWidths.push({ wch: 20 }));
-                summaryWs['!cols'] = colWidths;
+                // Створюємо worksheet
+                const ws = XLSX.utils.aoa_to_sheet(data);
 
-                // Додаємо зведений аркуш на початок
-                XLSX.utils.book_append_sheet(wb, summaryWs, 'Загальний розклад');
+                // Встановлюємо ширину колонок
+                const colWidths = [
+                    { wch: 12 },  // День
+                    { wch: 8 }    // Урок
+                ];
+                classes.forEach(() => colWidths.push({ wch: 25 })); // Класи
+                ws['!cols'] = colWidths;
+
+                // Встановлюємо висоту рядків
+                ws['!rows'] = [];
+                for (let i = 0; i < data.length; i++) {
+                    ws['!rows'].push({ hpt: i === 0 ? 20 : 50 }); // Заголовок менший, решта більші
+                }
+
+                // Об'єднуємо клітинки для днів тижня
+                if (!ws['!merges']) ws['!merges'] = [];
+                
+                let currentRow = 1; // Починаємо з 1 (0 - заголовок)
+                days.forEach(() => {
+                    // Об'єднуємо клітинки дня (lessons рядків)
+                    ws['!merges'].push({
+                        s: { r: currentRow, c: 0 },
+                        e: { r: currentRow + lessons - 1, c: 0 }
+                    });
+                    currentRow += lessons;
+                });
+
+                // Застосовуємо стилі до всіх клітинок
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                
+                for (let R = range.s.r; R <= range.e.r; ++R) {
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const cell_address = { c: C, r: R };
+                        const cell_ref = XLSX.utils.encode_cell(cell_address);
+                        
+                        if (!ws[cell_ref]) {
+                            ws[cell_ref] = { t: 's', v: '' };
+                        }
+                        
+                        // Базові стилі для всіх клітинок
+                        ws[cell_ref].s = {
+                            alignment: {
+                                horizontal: 'center',
+                                vertical: 'middle',
+                                wrapText: true
+                            },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '000000' } },
+                                bottom: { style: 'thin', color: { rgb: '000000' } },
+                                left: { style: 'thin', color: { rgb: '000000' } },
+                                right: { style: 'thin', color: { rgb: '000000' } }
+                            }
+                        };
+                        
+                        // Стилі для заголовків
+                        if (R === 0) {
+                            ws[cell_ref].s.fill = {
+                                patternType: 'solid',
+                                fgColor: { rgb: '667eea' }
+                            };
+                            ws[cell_ref].s.font = {
+                                bold: true,
+                                color: { rgb: 'FFFFFF' },
+                                sz: 12
+                            };
+                        }
+                        // Стилі для колонки "День"
+                        else if (C === 0) {
+                            ws[cell_ref].s.fill = {
+                                patternType: 'solid',
+                                fgColor: { rgb: 'e9ecef' }
+                            };
+                            ws[cell_ref].s.font = {
+                                bold: true,
+                                sz: 11
+                            };
+                        }
+                        // Стилі для колонки "Урок"
+                        else if (C === 1) {
+                            ws[cell_ref].s.fill = {
+                                patternType: 'solid',
+                                fgColor: { rgb: 'f8f9fa' }
+                            };
+                            ws[cell_ref].s.font = {
+                                bold: true,
+                                sz: 11
+                            };
+                        }
+                    }
+                }
+
+                // Додаємо worksheet до workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Розклад');
 
                 // Створюємо аркуш зі списком предметів
-                const subjectsData = [['Предмет', 'Вчитель', 'Годин на тиждень']];
+                const subjectsData = [['Предмет', 'Вчитель', 'Годин/тиждень', 'Використано']];
                 subjects.forEach(subject => {
-                    subjectsData.push([subject.name, subject.teacher, subject.hours]);
+                    let usedCount = 0;
+                    classes.forEach(cls => {
+                        const schedule = schedules[cls.id] || {};
+                        Object.values(schedule).forEach(slot => {
+                            if (Array.isArray(slot)) {
+                                usedCount += slot.filter(s => s.subjectId === subject.id).length;
+                            } else if (slot && slot.subjectId === subject.id) {
+                                usedCount++;
+                            }
+                        });
+                    });
+                    subjectsData.push([subject.name, subject.teacher, subject.hours, usedCount]);
                 });
 
                 const subjectsWs = XLSX.utils.aoa_to_sheet(subjectsData);
-                subjectsWs['!cols'] = [{ wch: 25 }, { wch: 25 }, { wch: 18 }];
+                subjectsWs['!cols'] = [{ wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }];
+                
+                // Стилі для аркушу предметів
+                const subjectsRange = XLSX.utils.decode_range(subjectsWs['!ref']);
+                for (let R = subjectsRange.s.r; R <= subjectsRange.e.r; ++R) {
+                    for (let C = subjectsRange.s.c; C <= subjectsRange.e.c; ++C) {
+                        const cell_address = { c: C, r: R };
+                        const cell_ref = XLSX.utils.encode_cell(cell_address);
+                        
+                        if (!subjectsWs[cell_ref]) continue;
+                        
+                        subjectsWs[cell_ref].s = {
+                            alignment: {
+                                horizontal: 'center',
+                                vertical: 'middle'
+                            },
+                            border: {
+                                top: { style: 'thin' },
+                                bottom: { style: 'thin' },
+                                left: { style: 'thin' },
+                                right: { style: 'thin' }
+                            }
+                        };
+                        
+                        if (R === 0) {
+                            subjectsWs[cell_ref].s.fill = {
+                                patternType: 'solid',
+                                fgColor: { rgb: '667eea' }
+                            };
+                            subjectsWs[cell_ref].s.font = {
+                                bold: true,
+                                color: { rgb: 'FFFFFF' }
+                            };
+                        }
+                    }
+                }
+                
                 XLSX.utils.book_append_sheet(wb, subjectsWs, 'Предмети');
 
                 // Зберігаємо файл
