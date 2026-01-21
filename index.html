@@ -483,6 +483,32 @@
             opacity: 1;
         }
 
+        .multiple-lessons {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .lesson-card-split {
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+
+        .lesson-card-split .lesson-card-subject {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .lesson-card-split .lesson-card-teacher {
+            font-size: 10px;
+        }
+
+        .lesson-card-split .delete-lesson-btn {
+            width: 18px;
+            height: 18px;
+            font-size: 14px;
+        }
+
         .available-tiles-section {
             margin-bottom: 20px;
             padding: 15px;
@@ -819,7 +845,13 @@
                 let usedCount = 0;
                 classes.forEach(cls => {
                     const schedule = schedules[cls.id] || {};
-                    usedCount += Object.values(schedule).filter(s => s && s.subjectId === subject.id).length;
+                    Object.values(schedule).forEach(slot => {
+                        if (Array.isArray(slot)) {
+                            usedCount += slot.filter(s => s.subjectId === subject.id).length;
+                        } else if (slot && slot.subjectId === subject.id) {
+                            usedCount++;
+                        }
+                    });
                 });
 
                 const color = getSubjectColor(subject.id);
@@ -892,7 +924,13 @@
                 let usedCount = 0;
                 classes.forEach(cls => {
                     const schedule = schedules[cls.id] || {};
-                    usedCount += Object.values(schedule).filter(s => s && s.subjectId === subject.id).length;
+                    Object.values(schedule).forEach(slot => {
+                        if (Array.isArray(slot)) {
+                            usedCount += slot.filter(s => s.subjectId === subject.id).length;
+                        } else if (slot && slot.subjectId === subject.id) {
+                            usedCount++;
+                        }
+                    });
                 });
                 
                 const availableCount = subject.hours - usedCount;
@@ -964,20 +1002,43 @@
                         schedulesHtml += `<td>`;
                         
                         if (lesson) {
-                            const color = getSubjectColor(lesson.subjectId);
-                            schedulesHtml += `
-                                <div class="lesson-card" draggable="true" 
-                                     data-subject-id="${lesson.subjectId}"
-                                     data-from-schedule="true"
-                                     data-class-id="${cls.id}"
-                                     data-day="${dayIndex}"
-                                     data-lesson="${i-1}"
-                                     style="background: ${color}; position: relative;">
-                                    <button class="delete-lesson-btn" onclick="deleteLesson(${cls.id}, ${dayIndex}, ${i-1}); event.stopPropagation();" title="Видалити урок">×</button>
-                                    <div class="lesson-card-subject">${lesson.name}</div>
-                                    <div class="lesson-card-teacher">${lesson.teacher}</div>
-                                </div>
-                            `;
+                            // Перевіряємо чи це масив уроків (підгрупи)
+                            if (Array.isArray(lesson)) {
+                                schedulesHtml += `<div class="multiple-lessons">`;
+                                lesson.forEach((les, idx) => {
+                                    const color = getSubjectColor(les.subjectId);
+                                    schedulesHtml += `
+                                        <div class="lesson-card lesson-card-split" draggable="true" 
+                                             data-subject-id="${les.subjectId}"
+                                             data-from-schedule="true"
+                                             data-class-id="${cls.id}"
+                                             data-day="${dayIndex}"
+                                             data-lesson="${i-1}"
+                                             style="background: ${color}; position: relative; margin-bottom: ${idx < lesson.length - 1 ? '4px' : '0'};">
+                                            <button class="delete-lesson-btn" onclick="deleteLesson(${cls.id}, ${dayIndex}, ${i-1}, ${les.subjectId}); event.stopPropagation();" title="Видалити урок">×</button>
+                                            <div class="lesson-card-subject">${les.name}</div>
+                                            <div class="lesson-card-teacher">${les.teacher}</div>
+                                        </div>
+                                    `;
+                                });
+                                schedulesHtml += `</div>`;
+                            } else {
+                                // Один урок
+                                const color = getSubjectColor(lesson.subjectId);
+                                schedulesHtml += `
+                                    <div class="lesson-card" draggable="true" 
+                                         data-subject-id="${lesson.subjectId}"
+                                         data-from-schedule="true"
+                                         data-class-id="${cls.id}"
+                                         data-day="${dayIndex}"
+                                         data-lesson="${i-1}"
+                                         style="background: ${color}; position: relative;">
+                                        <button class="delete-lesson-btn" onclick="deleteLesson(${cls.id}, ${dayIndex}, ${i-1}); event.stopPropagation();" title="Видалити урок">×</button>
+                                        <div class="lesson-card-subject">${lesson.name}</div>
+                                        <div class="lesson-card-teacher">${lesson.teacher}</div>
+                                    </div>
+                                `;
+                            }
                         } else {
                             schedulesHtml += `
                                 <div class="lesson-slot" 
@@ -1119,16 +1180,45 @@
             // Якщо переміщуємо з розкладу
             if (fromSchedule && originalSlot) {
                 const oldKey = `${originalSlot.day}-${originalSlot.lesson}`;
-                delete schedules[originalSlot.classId][oldKey];
+                const oldLessons = schedules[originalSlot.classId][oldKey];
+                
+                if (Array.isArray(oldLessons)) {
+                    // Видаляємо конкретний урок з масиву
+                    schedules[originalSlot.classId][oldKey] = oldLessons.filter(l => l.subjectId !== draggedSubjectId);
+                    if (schedules[originalSlot.classId][oldKey].length === 0) {
+                        delete schedules[originalSlot.classId][oldKey];
+                    }
+                } else if (oldLessons && oldLessons.subjectId === draggedSubjectId) {
+                    delete schedules[originalSlot.classId][oldKey];
+                }
             }
             
             // Додаємо урок до нового слоту
             const subject = subjects.find(s => s.id === draggedSubjectId);
-            schedule[key] = {
+            const newLesson = {
                 subjectId: subject.id,
                 name: subject.name,
                 teacher: subject.teacher
             };
+            
+            // Якщо в слоті вже є урок(и), додаємо до масиву
+            if (schedule[key]) {
+                if (Array.isArray(schedule[key])) {
+                    // Перевіряємо чи такий урок вже не доданий
+                    const exists = schedule[key].some(l => l.subjectId === subject.id);
+                    if (!exists) {
+                        schedule[key].push(newLesson);
+                    }
+                } else {
+                    // Перетворюємо в масив
+                    const existingLesson = schedule[key];
+                    if (existingLesson.subjectId !== subject.id) {
+                        schedule[key] = [existingLesson, newLesson];
+                    }
+                }
+            } else {
+                schedule[key] = newLesson;
+            }
             
             renderSchedules();
             renderSubjects();
@@ -1159,7 +1249,7 @@
         }
 
         // Функції збереження та завантаження
-        function deleteLesson(classId, day, lesson) {
+        function deleteLesson(classId, day, lesson, subjectId = null) {
             const key = `${day}-${lesson}`;
             
             if (schedules[classId] && schedules[classId][key]) {
@@ -1168,7 +1258,19 @@
                 const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
                 const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
                 
-                delete schedules[classId][key];
+                const slot = schedules[classId][key];
+                
+                // Якщо це масив уроків і вказано subjectId
+                if (Array.isArray(slot) && subjectId !== null) {
+                    schedules[classId][key] = slot.filter(l => l.subjectId !== subjectId);
+                    if (schedules[classId][key].length === 0) {
+                        delete schedules[classId][key];
+                    }
+                } else {
+                    // Видаляємо весь слот
+                    delete schedules[classId][key];
+                }
+                
                 renderSchedules();
                 renderSubjects();
                 
