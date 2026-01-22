@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.984</title>
+    <title>Розклад уроків v 1.985</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -2191,100 +2191,98 @@
         function toggleMagnifier() {
             magnifierActive = !magnifierActive;
             const magnifier = document.getElementById('magnifier');
-            const scheduleTab = document.getElementById('scheduleTab');
+            const scheduleContent = document.getElementById('scheduleContent');
             
             if (magnifierActive) {
                 magnifier.classList.add('active');
-                scheduleTab.classList.add('magnifier-active');
-                scheduleTab.addEventListener('mousemove', moveMagnifier);
-                scheduleTab.addEventListener('mouseleave', hideMagnifier);
+                scheduleContent.classList.add('magnifier-active');
+                scheduleContent.addEventListener('mousemove', moveMagnifier);
+                scheduleContent.addEventListener('mouseleave', hideMagnifier);
             } else {
                 magnifier.classList.remove('active');
                 magnifier.style.display = 'none';
-                scheduleTab.classList.remove('magnifier-active');
-                scheduleTab.removeEventListener('mousemove', moveMagnifier);
-                scheduleTab.removeEventListener('mouseleave', hideMagnifier);
+                scheduleContent.classList.remove('magnifier-active');
+                scheduleContent.removeEventListener('mousemove', moveMagnifier);
+                scheduleContent.removeEventListener('mouseleave', hideMagnifier);
             }
         }
 
         function moveMagnifier(e) {
             const magnifier = document.getElementById('magnifier');
-            const scheduleTab = document.getElementById('scheduleTab');
+            const scheduleWrapper = document.querySelector('.schedule-wrapper');
             
-            if (!magnifierActive) return;
+            if (!magnifierActive || !scheduleWrapper) return;
             
             magnifier.style.display = 'block';
             
-            // Позиціонуємо лупу навколо курсора
-            const x = e.pageX - 100; // центруємо лупу
-            const y = e.pageY - 100;
+            // Розмір лупи
+            const magnifierSize = 200;
+            const halfSize = magnifierSize / 2;
             
-            magnifier.style.left = x + 'px';
-            magnifier.style.top = y + 'px';
+            // Розраховуємо позицію лупи
+            let magnifierX = e.pageX - halfSize;
+            let magnifierY = e.pageY - halfSize;
             
-            // Створюємо збільшене зображення
-            const rect = scheduleTab.getBoundingClientRect();
-            const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-            const yPercent = ((e.clientY - rect.top + scheduleTab.scrollTop) / scheduleTab.scrollHeight) * 100;
+            // Перевіряємо межі екрану та коригуємо позицію
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
             
-            // Клонуємо вміст для збільшення
-            magnifier.style.backgroundImage = `url('${captureElement(scheduleTab)}')`;
-            magnifier.style.backgroundSize = `${scheduleTab.offsetWidth * magnifierZoom}px ${scheduleTab.offsetHeight * magnifierZoom}px`;
-            magnifier.style.backgroundPosition = `${-xPercent * magnifierZoom + 50}% ${-yPercent * magnifierZoom + 50}%`;
+            // Права межа
+            if (magnifierX + magnifierSize > scrollX + viewportWidth) {
+                magnifierX = scrollX + viewportWidth - magnifierSize - 10;
+            }
+            // Ліва межа
+            if (magnifierX < scrollX) {
+                magnifierX = scrollX + 10;
+            }
+            // Нижня межа
+            if (magnifierY + magnifierSize > scrollY + viewportHeight) {
+                magnifierY = scrollY + viewportHeight - magnifierSize - 10;
+            }
+            // Верхня межа
+            if (magnifierY < scrollY) {
+                magnifierY = scrollY + 10;
+            }
+            
+            // Позиціонуємо лупу
+            magnifier.style.left = magnifierX + 'px';
+            magnifier.style.top = magnifierY + 'px';
+            
+            // Отримуємо координати відносно schedule-wrapper (використовуємо оригінальну позицію курсора)
+            const wrapperRect = scheduleWrapper.getBoundingClientRect();
+            const mouseX = e.clientX - wrapperRect.left + scheduleWrapper.scrollLeft;
+            const mouseY = e.clientY - wrapperRect.top + scheduleWrapper.scrollTop;
+            
+            // Отримуємо таблицю
+            const table = scheduleWrapper.querySelector('.schedule-table');
+            if (!table) return;
+            
+            // Очищаємо попередній вміст
+            magnifier.innerHTML = '';
+            
+            // Створюємо контейнер для збільшеного вмісту
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.width = table.offsetWidth + 'px';
+            container.style.height = table.offsetHeight + 'px';
+            container.style.transform = `scale(${magnifierZoom})`;
+            container.style.transformOrigin = '0 0';
+            container.style.left = (-mouseX * magnifierZoom + halfSize) + 'px';
+            container.style.top = (-mouseY * magnifierZoom + halfSize) + 'px';
+            
+            // Клонуємо таблицю
+            const clone = table.cloneNode(true);
+            clone.style.margin = '0';
+            
+            container.appendChild(clone);
+            magnifier.appendChild(container);
         }
 
         function hideMagnifier() {
             const magnifier = document.getElementById('magnifier');
             magnifier.style.display = 'none';
-        }
-
-        function captureElement(element) {
-            // Простий спосіб - використовуємо canvas для захоплення
-            // Альтернативний підхід - просто клонуємо DOM
-            return '';
-        }
-
-        // Альтернативний підхід - використовуємо HTML clone замість canvas
-        function moveMagnifierAlternative(e) {
-            const magnifier = document.getElementById('magnifier');
-            
-            if (!magnifierActive) return;
-            
-            magnifier.style.display = 'block';
-            
-            // Позиціонуємо лупу
-            const x = e.pageX - 100;
-            const y = e.pageY - 100;
-            
-            magnifier.style.left = x + 'px';
-            magnifier.style.top = y + 'px';
-            
-            // Копіюємо вміст
-            const scheduleWrapper = document.querySelector('.schedule-wrapper');
-            if (!scheduleWrapper) return;
-            
-            const rect = scheduleWrapper.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left + scheduleWrapper.scrollLeft;
-            const mouseY = e.clientY - rect.top + scheduleWrapper.scrollTop;
-            
-            // Створюємо transform для збільшення
-            const table = scheduleWrapper.querySelector('.schedule-table');
-            if (table) {
-                const clone = table.cloneNode(true);
-                clone.style.transform = `scale(${magnifierZoom})`;
-                clone.style.transformOrigin = '0 0';
-                clone.style.position = 'absolute';
-                clone.style.left = `${-mouseX * (magnifierZoom - 1)}px`;
-                clone.style.top = `${-mouseY * (magnifierZoom - 1)}px`;
-                
-                magnifier.innerHTML = '';
-                magnifier.appendChild(clone);
-            }
-        }
-
-        // Використовуємо альтернативний підхід
-        function moveMagnifier(e) {
-            moveMagnifierAlternative(e);
         }
 
         renderClasses();
