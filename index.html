@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.94</title>
+    <title>Розклад уроків v 1.95</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -1478,7 +1478,7 @@
         }
 
         // Функції збереження та завантаження
-        function changeSubjectHours(subjectId, change) {
+function changeSubjectHours(subjectId, change) {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
     
@@ -1506,17 +1506,16 @@
         return;
     }
     
-    // КЛЮЧОВА ЗМІНА: Зберігаємо позицію ДО зміни
     const scheduleWrapper = document.querySelector('.schedule-wrapper');
     const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
     const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
     
     subject.hours = newHours;
     
+    // ТІЛЬКИ renderSubjects - він сам НЕ викликає renderSchedules
     renderSubjects();
-    renderSchedules();
+    // renderSchedules(); - ВИДАЛИТИ ЦЕЙ РЯДОК!
     
-    // КЛЮЧОВА ЗМІНА: Використовуємо requestAnimationFrame замість setTimeout
     requestAnimationFrame(() => {
         const newScheduleWrapper = document.querySelector('.schedule-wrapper');
         if (newScheduleWrapper) {
