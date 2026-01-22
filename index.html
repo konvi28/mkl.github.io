@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.972</title>
+    <title>Розклад уроків v 1.973</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -1482,7 +1482,7 @@ function changeSubjectHours(subjectId, change, event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
-		 event.target.blur(); // ДОДАЙ ЦЕЙ РЯДОК - прибирає фокус з кнопки
+        event.target.blur();
     }
     
     const subject = subjects.find(s => s.id === subjectId);
@@ -1516,20 +1516,26 @@ function changeSubjectHours(subjectId, change, event) {
     const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
     const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
     
+    // БЛОКУЄМО СКРОЛ
+    if (scheduleWrapper) {
+        scheduleWrapper.style.overflow = 'hidden';
+    }
+    
     subject.hours = newHours;
     
     renderSubjects();
     renderSchedules();
     
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            const newScheduleWrapper = document.querySelector('.schedule-wrapper');
-            if (newScheduleWrapper) {
-                newScheduleWrapper.scrollTop = scrollTop;
-                newScheduleWrapper.scrollLeft = scrollLeft;
-            }
-        });
-    });
+    // ВІДНОВЛЮЄМО СКРОЛ ОДРАЗУ
+    const newScheduleWrapper = document.querySelector('.schedule-wrapper');
+    if (newScheduleWrapper) {
+        newScheduleWrapper.scrollTop = scrollTop;
+        newScheduleWrapper.scrollLeft = scrollLeft;
+        // РОЗБЛОКУЄМО СКРОЛ
+        setTimeout(() => {
+            newScheduleWrapper.style.overflow = 'auto';
+        }, 100);
+    }
 }
 
         function clearDemoData() {
