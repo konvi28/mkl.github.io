@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.978</title>
+    <title>Розклад уроків v 1.979</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 	
@@ -1527,34 +1527,52 @@ function changeSubjectHours(subjectId, change, event) {
         return;
     }
     
-    const scheduleWrapper = document.querySelector('.schedule-wrapper');
-    const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
-    const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
-    
-    // БЛОКУЄМО СКРОЛ НА РІВНІ ДОКУМЕНТА
-    document.documentElement.style.scrollBehavior = 'auto';
-    document.body.style.scrollBehavior = 'auto';
-    
+    // ПРОСТО ЗМІНЮЄМО ЗНАЧЕННЯ БЕЗ ПОВНОГО РЕРЕНДЕРИНГУ
     subject.hours = newHours;
     
-    // ВІДРАЗУ після зміни даних встановлюємо скрол ДО рендерингу
-    if (scheduleWrapper) {
-        scheduleWrapper.scrollTop = scrollTop;
-        scheduleWrapper.scrollLeft = scrollLeft;
-    }
+    // ОНОВЛЮЄМО ТІЛЬКИ ТЕКСТ БЕЗ ПЕРЕСТВОРЕННЯ DOM
+    const availableCount = newHours - usedCount;
     
-    renderSchedules();
+    // Знаходимо елемент з інформацією про доступність
+    const subjectItems = document.querySelectorAll('.available-tiles-section .subject-item');
+    subjectItems.forEach(item => {
+        const subjectIdInDom = item.querySelector('.tiles-container')?.dataset.subjectId;
+        if (subjectIdInDom == subjectId) {
+            const teacherDiv = item.querySelector('.subject-teacher');
+            if (teacherDiv) {
+                teacherDiv.textContent = `Вчитель: ${subject.teacher} • Доступно: ${availableCount} з ${newHours}`;
+            }
+            
+            // Оновлюємо плитки
+            const tilesContainer = item.querySelector('.tiles-container');
+            if (tilesContainer) {
+                const color = getSubjectColor(subjectId);
+                let tilesHtml = '';
+                
+                for (let i = 0; i < availableCount; i++) {
+                    tilesHtml += `
+                        <div class="lesson-tile" 
+                             draggable="true"
+                             data-subject-id="${subjectId}"
+                             style="background: ${color};">
+                            ${subject.name}
+                        </div>
+                    `;
+                }
+                
+                if (availableCount === 0) {
+                    tilesHtml = '<div style="color: #6c757d; font-size: 12px; padding: 5px;">Всі уроки розміщені в розкладі</div>';
+                }
+                
+                tilesContainer.innerHTML = tilesHtml;
+                attachScheduleDragHandlers();
+            }
+        }
+    });
     
-    // СИНХРОННО встановлюємо скрол ПІСЛЯ рендерингу
-    const newScheduleWrapper = document.querySelector('.schedule-wrapper');
-    if (newScheduleWrapper) {
-        newScheduleWrapper.scrollTop = scrollTop;
-        newScheduleWrapper.scrollLeft = scrollLeft;
-    }
-    
-    // Blur з затримкою щоб не скролило
+    // Blur кнопки
     if (event && event.target) {
-        setTimeout(() => event.target.blur(), 100);
+        event.target.blur();
     }
 }
 
