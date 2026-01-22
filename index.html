@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.990</title>
+    <title>Розклад уроків v 2.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -928,6 +928,9 @@
             document.getElementById('className').value = '';
             renderClasses();
             renderSchedules();
+            
+            // Автозбереження
+            saveToLocalStorage();
         }
 
         function removeClass(id) {
@@ -936,6 +939,9 @@
                 delete schedules[id];
                 renderClasses();
                 renderSchedules();
+                
+                // Автозбереження
+                saveToLocalStorage();
             }
         }
 
@@ -964,6 +970,9 @@
             
             renderSubjects();
             renderSchedules();
+            
+            // Автозбереження
+            saveToLocalStorage();
         }
 
         function removeSubject(id) {
@@ -980,6 +989,9 @@
                 
                 renderSubjects();
                 renderSchedules();
+                
+                // Автозбереження
+                saveToLocalStorage();
             }
         }
 
@@ -1526,6 +1538,9 @@
             renderSchedules();
             renderSubjects();
             
+            // Автозбереження
+            saveToLocalStorage();
+            
             // Відновлюємо позицію прокрутки після рендерингу ДЛЯ ВСІХ КОНТЕЙНЕРІВ
             setTimeout(() => {
                 const newScheduleWrapper = document.querySelector('.schedule-wrapper');
@@ -1609,6 +1624,9 @@
             
             renderSchedules();
             renderSubjects();
+            
+            // Автозбереження
+            saveToLocalStorage();
             
             // Відновлюємо позицію прокрутки після рендерингу ДЛЯ ВСІХ КОНТЕЙНЕРІВ
             setTimeout(() => {
@@ -1721,6 +1739,9 @@
             if (event && event.target) {
                 event.target.blur();
             }
+            
+            // Автозбереження
+            saveToLocalStorage();
         }
 
         function clearDemoData() {
@@ -1738,6 +1759,9 @@
                 renderClasses();
                 renderSubjects();
                 renderSchedules();
+                
+                // Очищаємо localStorage
+                clearLocalStorage();
                 
                 // Відновлюємо позицію прокрутки
                 setTimeout(() => {
@@ -1774,6 +1798,9 @@
                 
                 renderSchedules();
                 renderSubjects();
+                
+                // Автозбереження
+                saveToLocalStorage();
                 
                 // Відновлюємо позицію прокрутки після рендерингу
                 setTimeout(() => {
@@ -1848,6 +1875,9 @@
                     renderClasses();
                     renderSubjects();
                     renderSchedules();
+                    
+                    // Автозбереження
+                    saveToLocalStorage();
                     
                     const savedDate = data.savedDate ? new Date(data.savedDate).toLocaleString('uk-UA') : 'невідома';
                     alert(`✅ Розклад успішно завантажено!\nДата збереження: ${savedDate}`);
@@ -2339,6 +2369,9 @@
                     renderClasses();
                     renderSubjects();
                     renderSchedules();
+                    
+                    // Автозбереження
+                    saveToLocalStorage();
 
                     alert(`✅ Розклад успішно імпортовано!\n\nКласів: ${newClasses.length}\nПредметів: ${newSubjects.length}`);
 
@@ -2400,6 +2433,55 @@
             });
             
             return lessons;
+        }
+
+        // Функції автозбереження в localStorage
+        function saveToLocalStorage() {
+            try {
+                const data = {
+                    classes: classes,
+                    subjects: subjects,
+                    schedules: schedules,
+                    nextClassId: nextClassId,
+                    nextSubjectId: nextSubjectId,
+                    version: '1.0',
+                    lastModified: new Date().toISOString()
+                };
+                localStorage.setItem('rozklad_data', JSON.stringify(data));
+            } catch (error) {
+                console.error('Помилка збереження в localStorage:', error);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('rozklad_data');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    
+                    // Завантажуємо дані
+                    classes = data.classes || classes;
+                    subjects = data.subjects || subjects;
+                    schedules = data.schedules || schedules;
+                    nextClassId = data.nextClassId || nextClassId;
+                    nextSubjectId = data.nextSubjectId || nextSubjectId;
+                    
+                    console.log('✅ Дані завантажено з localStorage');
+                    return true;
+                }
+            } catch (error) {
+                console.error('Помилка завантаження з localStorage:', error);
+            }
+            return false;
+        }
+
+        function clearLocalStorage() {
+            try {
+                localStorage.removeItem('rozklad_data');
+                console.log('✅ localStorage очищено');
+            } catch (error) {
+                console.error('Помилка очищення localStorage:', error);
+            }
         }
 
         // Функціонал лупи
@@ -2502,6 +2584,9 @@
             const magnifier = document.getElementById('magnifier');
             magnifier.style.display = 'none';
         }
+
+        // Завантаження даних з localStorage при запуску
+        loadFromLocalStorage();
 
         renderClasses();
         renderSubjects();
