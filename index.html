@@ -1479,56 +1479,52 @@
 
         // Функції збереження та завантаження
         function changeSubjectHours(subjectId, change) {
-            const subject = subjects.find(s => s.id === subjectId);
-            if (!subject) return;
-            
-            const newHours = subject.hours + change;
-            
-            // Перевіряємо мінімальну кількість
-            if (newHours < 1) {
-                alert('⚠️ Кількість годин не може бути менше 1');
-                return;
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    
+    const newHours = subject.hours + change;
+    
+    if (newHours < 1) {
+        alert('⚠️ Кількість годин не може бути менше 1');
+        return;
+    }
+    
+    let usedCount = 0;
+    classes.forEach(cls => {
+        const schedule = schedules[cls.id] || {};
+        Object.values(schedule).forEach(slot => {
+            if (Array.isArray(slot)) {
+                usedCount += slot.filter(s => s.subjectId === subject.id).length;
+            } else if (slot && slot.subjectId === subject.id) {
+                usedCount++;
             }
-            
-            // Підраховуємо скільки годин вже використано
-            let usedCount = 0;
-            classes.forEach(cls => {
-                const schedule = schedules[cls.id] || {};
-                Object.values(schedule).forEach(slot => {
-                    if (Array.isArray(slot)) {
-                        usedCount += slot.filter(s => s.subjectId === subject.id).length;
-                    } else if (slot && slot.subjectId === subject.id) {
-                        usedCount++;
-                    }
-                });
-            });
-            
-            // Перевіряємо чи нова кількість не менша за використану (тільки при зменшенні)
-            if (change < 0 && newHours < usedCount) {
-                alert(`⚠️ Неможливо зменшити кількість годин до ${newHours}, оскільки вже використано ${usedCount} годин в розкладі. Спочатку видаліть деякі уроки з розкладу.`);
-                return;
-            }
-            
-            // Оновлюємо кількість годин
-            subject.hours = newHours;
-            
-            // Зберігаємо позицію прокрутки
-            const scheduleWrapper = document.querySelector('.schedule-wrapper');
-            const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
-            const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
-            
-            renderSubjects();
-            renderSchedules();
-            
-            // Відновлюємо позицію прокрутки
-            setTimeout(() => {
-                const newScheduleWrapper = document.querySelector('.schedule-wrapper');
-                if (newScheduleWrapper) {
-                    newScheduleWrapper.scrollTop = scrollTop;
-                    newScheduleWrapper.scrollLeft = scrollLeft;
-                }
-            }, 0);
+        });
+    });
+    
+    if (change < 0 && newHours < usedCount) {
+        alert(`⚠️ Неможливо зменшити кількість годин до ${newHours}, оскільки вже використано ${usedCount} годин в розкладі. Спочатку видаліть деякі уроки з розкладу.`);
+        return;
+    }
+    
+    // КЛЮЧОВА ЗМІНА: Зберігаємо позицію ДО зміни
+    const scheduleWrapper = document.querySelector('.schedule-wrapper');
+    const scrollTop = scheduleWrapper ? scheduleWrapper.scrollTop : 0;
+    const scrollLeft = scheduleWrapper ? scheduleWrapper.scrollLeft : 0;
+    
+    subject.hours = newHours;
+    
+    renderSubjects();
+    renderSchedules();
+    
+    // КЛЮЧОВА ЗМІНА: Використовуємо requestAnimationFrame замість setTimeout
+    requestAnimationFrame(() => {
+        const newScheduleWrapper = document.querySelector('.schedule-wrapper');
+        if (newScheduleWrapper) {
+            newScheduleWrapper.scrollTop = scrollTop;
+            newScheduleWrapper.scrollLeft = scrollLeft;
         }
+    });
+}
 
         function clearDemoData() {
             if (confirm('Ви впевнені, що хочете видалити всі дані (класи, предмети, розклад)?')) {
