@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.97</title>
+    <title>Розклад уроків v 1.971</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -1058,8 +1058,8 @@
                                 <div class="subject-teacher">Вчитель: ${subject.teacher} • Доступно: ${availableCount} з ${subject.hours}</div>
                             </div>
                             <div style="display: flex; gap: 5px; align-items: center;">
-                                <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, -1); event.stopPropagation();" title="Зменшити кількість годин">−</button>
-                                <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, 1); event.stopPropagation();" title="Збільшити кількість годин">+</button>
+<button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, -1, event);" title="Зменшити кількість годин">−</button>
+<button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, 1, event);" title="Збільшити кількість годин">+</button>
                             </div>
                         </div>
                         <div class="tiles-container" data-subject-id="${subject.id}">
@@ -1478,7 +1478,12 @@
         }
 
         // Функції збереження та завантаження
-function changeSubjectHours(subjectId, change) {
+function changeSubjectHours(subjectId, change, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
     
@@ -1515,7 +1520,6 @@ function changeSubjectHours(subjectId, change) {
     renderSubjects();
     renderSchedules();
     
-    // Використовуємо подвійний requestAnimationFrame для гарантії
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             const newScheduleWrapper = document.querySelector('.schedule-wrapper');
