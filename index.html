@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 1.982</title>
+    <title>Розклад уроків v 1.980</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -87,7 +87,7 @@
 
         .tab-content {
             display: none;
-            padding: 20px;
+            padding: 0 20px 20px 20px;
             flex: 1;
             overflow-y: auto;
         }
@@ -95,6 +95,11 @@
         .tab-content.active {
             display: flex;
             flex-direction: column;
+        }
+
+        .tab-content > h2:first-child,
+        .tab-content > .save-load-section:first-child {
+            margin-top: 20px;
         }
 
         .form-group {
@@ -222,6 +227,10 @@
 
         .save-load-section * {
             scroll-margin: 0;
+        }
+
+        #scheduleContent {
+            padding-top: 10px;
         }
 
         .save-load-section h3 {
@@ -1043,8 +1052,10 @@
             }
 
             // Генеруємо доступні плиточки
-            let tilesHtml = '<div class="available-tiles-section"><h2>Доступні уроки для розміщення</h2>';
+            let tilesHtml = '';
+            let hasAvailableLessons = false;
             
+            // Спочатку перевіряємо чи є взагалі доступні уроки
             subjects.forEach(subject => {
                 let usedCount = 0;
                 classes.forEach(cls => {
@@ -1059,42 +1070,65 @@
                 });
                 
                 const availableCount = subject.hours - usedCount;
-                const color = getSubjectColor(subject.id);
-                
-                tilesHtml += `
-                    <div class="subject-item" style="margin-bottom: 15px;">
-                        <div class="subject-header">
-                            <div class="subject-info">
-                                <div class="subject-name">${subject.name}</div>
-                                <div class="subject-teacher">Вчитель: ${subject.teacher} • Доступно: ${availableCount} з ${subject.hours}</div>
-                            </div>
-                            <div style="display: flex; gap: 5px; align-items: center;">
-                                <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, -1, event);" title="Зменшити кількість годин">−</button>
-                                <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, 1, event);" title="Збільшити кількість годин">+</button>
-                            </div>
-                        </div>
-                        <div class="tiles-container" data-subject-id="${subject.id}">
-                `;
-                
-                for (let i = 0; i < availableCount; i++) {
-                    tilesHtml += `
-                        <div class="lesson-tile" 
-                             draggable="true"
-                             data-subject-id="${subject.id}"
-                             style="background: ${color};">
-                            ${subject.name}
-                        </div>
-                    `;
+                if (availableCount > 0) {
+                    hasAvailableLessons = true;
                 }
-                
-                if (availableCount === 0) {
-                    tilesHtml += `<div style="color: #6c757d; font-size: 12px; padding: 5px;">Всі уроки розміщені в розкладі</div>`;
-                }
-                
-                tilesHtml += '</div></div>';
             });
             
-            tilesHtml += '</div>';
+            // Показуємо блок тільки якщо є доступні уроки
+            if (hasAvailableLessons) {
+                tilesHtml = '<div class="available-tiles-section"><h2>Доступні уроки для розміщення</h2>';
+                
+                subjects.forEach(subject => {
+                    let usedCount = 0;
+                    classes.forEach(cls => {
+                        const schedule = schedules[cls.id] || {};
+                        Object.values(schedule).forEach(slot => {
+                            if (Array.isArray(slot)) {
+                                usedCount += slot.filter(s => s.subjectId === subject.id).length;
+                            } else if (slot && slot.subjectId === subject.id) {
+                                usedCount++;
+                            }
+                        });
+                    });
+                    
+                    const availableCount = subject.hours - usedCount;
+                    const color = getSubjectColor(subject.id);
+                    
+                    // Показуємо тільки предмети з доступними уроками
+                    if (availableCount > 0) {
+                        tilesHtml += `
+                            <div class="subject-item" style="margin-bottom: 15px;">
+                                <div class="subject-header">
+                                    <div class="subject-info">
+                                        <div class="subject-name">${subject.name}</div>
+                                        <div class="subject-teacher">Вчитель: ${subject.teacher} • Доступно: ${availableCount} з ${subject.hours}</div>
+                                    </div>
+                                    <div style="display: flex; gap: 5px; align-items: center;">
+                                        <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, -1, event);" title="Зменшити кількість годин">−</button>
+                                        <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, 1, event);" title="Збільшити кількість годин">+</button>
+                                    </div>
+                                </div>
+                                <div class="tiles-container" data-subject-id="${subject.id}">
+                        `;
+                        
+                        for (let i = 0; i < availableCount; i++) {
+                            tilesHtml += `
+                                <div class="lesson-tile" 
+                                     draggable="true"
+                                     data-subject-id="${subject.id}"
+                                     style="background: ${color};">
+                                    ${subject.name}
+                                </div>
+                            `;
+                        }
+                        
+                        tilesHtml += '</div></div>';
+                    }
+                });
+                
+                tilesHtml += '</div>';
+            }
 
             // Генеруємо розклад
             let schedulesHtml = '<div class="schedules-container">';
@@ -1626,10 +1660,6 @@
                                     ${subject.name}
                                 </div>
                             `;
-                        }
-                        
-                        if (availableCount === 0) {
-                            tilesHtml = '<div style="color: #6c757d; font-size: 12px; padding: 5px;">Всі уроки розміщені в розкладі</div>';
                         }
                         
                         tilesContainer.innerHTML = tilesHtml;
