@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 3.5</title>
+    <title>Розклад уроків v 3.5.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -913,7 +913,7 @@
             <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-success" onclick="exportSubjectsToExcel()">📊 Експорт предметів в Excel</button>
                 <button class="btn btn-info" onclick="document.getElementById('subjectsExcelInput').click()">📥 Імпорт предметів з Excel</button>
-                <button class="btn" onclick="downloadSubjectsTemplate()" style="background: #17a2b8; color: white;">📄 Завантажити шаблон</button>
+                <button class="btn btn-info" onclick="downloadSubjectsTemplate()">📄 Завантажити шаблон</button>
                 <input type="file" id="subjectsExcelInput" accept=".xlsx,.xls" onchange="importSubjectsFromExcel(event)" style="display: none;">
             </div>
             
@@ -942,7 +942,7 @@
                 <button class="btn btn-info" onclick="document.getElementById('fileInput').click()">📂 Завантажити розклад (JSON)</button>
                 <button class="btn btn-success" onclick="exportToExcel()">📊 Експорт в Excel</button>
                 <button class="btn btn-info" onclick="document.getElementById('excelInput').click()">📥 Імпорт з Excel</button>
-                <button class="btn" onclick="downloadScheduleTemplate()" style="background: #17a2b8; color: white;">📄 Завантажити шаблон</button>
+                <button class="btn btn-info" onclick="downloadScheduleTemplate()">📄 Завантажити шаблон</button>
                 <button class="btn btn-danger" onclick="clearDemoData()">🗑️ Видалити дані</button>
                 <button class="btn btn-info" onclick="checkTeacherConflicts()">🔍 Перевірка на збіг</button>
                 <button class="btn btn-info" onclick="toggleMagnifier()">🔎 Лупа</button>
