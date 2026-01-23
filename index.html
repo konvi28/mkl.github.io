@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 2.3</title>
+    <title>Розклад уроків v 3.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -710,6 +710,80 @@
             color: #495057;
         }
 
+        /* Стилі для звітів */
+        .report-result {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .report-result h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .teacher-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .teacher-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .teacher-schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .teacher-schedule-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #667eea;
+        }
+
+        .teacher-schedule-table td {
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .teacher-schedule-table td.has-lesson {
+            background: #e7f3ff;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .teacher-schedule-table td.no-lesson {
+            background: #f8f9fa;
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .teacher-schedule-table .class-name {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
         .footer {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -759,6 +833,7 @@
             <button class="tab active" onclick="switchTab('classes')">Класи</button>
             <button class="tab" onclick="switchTab('subjects')">Предмети і вчителі</button>
             <button class="tab" onclick="switchTab('schedule')">Розклад</button>
+            <button class="tab" onclick="switchTab('reports')">Звіти</button>
         </div>
 
         <div id="classesTab" class="tab-content active">
@@ -824,6 +899,65 @@
             
             <!-- Лупа -->
             <div id="magnifier" style="display: none;"></div>
+        </div>
+
+        <div id="reportsTab" class="tab-content">
+            <h2>📊 Звіти та аналітика</h2>
+            
+            <!-- Звіт 1: Вільні вчителі -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; color: #333;">🕐 Вільні вчителі в обраний час</h3>
+                <p style="color: #6c757d; margin-bottom: 15px;">Оберіть день тижня та номер уроку, щоб побачити які вчителі вільні (мають вікно)</p>
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                        <label for="reportDay">День тижня:</label>
+                        <select id="reportDay" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px;">
+                            <option value="">-- Оберіть день --</option>
+                            <option value="0">Понеділок</option>
+                            <option value="1">Вівторок</option>
+                            <option value="2">Середа</option>
+                            <option value="3">Четвер</option>
+                            <option value="4">П'ятниця</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                        <label for="reportLesson">Номер уроку:</label>
+                        <select id="reportLesson" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px;">
+                            <option value="">-- Оберіть урок --</option>
+                            <option value="0">1 урок</option>
+                            <option value="1">2 урок</option>
+                            <option value="2">3 урок</option>
+                            <option value="3">4 урок</option>
+                            <option value="4">5 урок</option>
+                            <option value="5">6 урок</option>
+                            <option value="6">7 урок</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="showFreeTeachers()">🔍 Показати вільних вчителів</button>
+                
+                <div id="freeTeachersResult" style="margin-top: 20px;"></div>
+            </div>
+            
+            <!-- Звіт 2: Розклад вчителя -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px; color: #333;">👨‍🏫 Розклад вчителя</h3>
+                <p style="color: #6c757d; margin-bottom: 15px;">Оберіть вчителя, щоб побачити його повний розклад на тиждень</p>
+                
+                <div class="form-group" style="max-width: 400px;">
+                    <label for="reportTeacher">Вчитель:</label>
+                    <select id="reportTeacher" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 16px;">
+                        <option value="">-- Оберіть вчителя --</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" onclick="showTeacherSchedule()">📅 Показати розклад</button>
+                
+                <div id="teacherScheduleResult" style="margin-top: 20px;"></div>
+            </div>
         </div>
 
         <div class="footer">
@@ -973,6 +1107,9 @@
             
             // Автозбереження
             saveToLocalStorage();
+            
+            // Оновлюємо список вчителів в звітах
+            updateTeachersList();
         }
 
         function removeSubject(id) {
@@ -992,6 +1129,9 @@
                 
                 // Автозбереження
                 saveToLocalStorage();
+                
+                // Оновлюємо список вчителів в звітах
+                updateTeachersList();
             }
         }
 
@@ -2010,6 +2150,9 @@
                     // Автозбереження
                     saveToLocalStorage();
                     
+                    // Оновлюємо список вчителів в звітах
+                    updateTeachersList();
+                    
                     const savedDate = data.savedDate ? new Date(data.savedDate).toLocaleString('uk-UA') : 'невідома';
                     alert(`✅ Розклад успішно завантажено!\nДата збереження: ${savedDate}`);
                 } catch (error) {
@@ -2540,6 +2683,9 @@
                     
                     // Автозбереження
                     saveToLocalStorage();
+                    
+                    // Оновлюємо список вчителів в звітах
+                    updateTeachersList();
 
                     alert(`✅ Розклад успішно імпортовано!\n\nКласів: ${newClasses.length}\nПредметів: ${newSubjects.length}\nУроків: ${lessonsImported}`);
 
@@ -2766,12 +2912,208 @@
             magnifier.style.display = 'none';
         }
 
+        // Функції для звітів
+        function showFreeTeachers() {
+            const dayIndex = document.getElementById('reportDay').value;
+            const lessonIndex = document.getElementById('reportLesson').value;
+            const resultDiv = document.getElementById('freeTeachersResult');
+            
+            if (dayIndex === '' || lessonIndex === '') {
+                resultDiv.innerHTML = '<p style="color: #dc3545;">⚠️ Будь ласка, оберіть день тижня та номер уроку</p>';
+                return;
+            }
+            
+            const dayName = days[parseInt(dayIndex)];
+            const lessonNum = parseInt(lessonIndex) + 1;
+            
+            // Збираємо всіх унікальних вчителів
+            const allTeachers = new Set();
+            subjects.forEach(subject => {
+                allTeachers.add(subject.teacher);
+            });
+            
+            // Збираємо вчителів які викладають в обраний час
+            const busyTeachers = new Set();
+            const key = `${dayIndex}-${lessonIndex}`;
+            
+            classes.forEach(cls => {
+                const lesson = schedules[cls.id][key];
+                if (lesson) {
+                    if (Array.isArray(lesson)) {
+                        lesson.forEach(les => busyTeachers.add(les.teacher));
+                    } else {
+                        busyTeachers.add(lesson.teacher);
+                    }
+                }
+            });
+            
+            // Знаходимо вільних вчителів
+            const freeTeachers = [...allTeachers].filter(teacher => !busyTeachers.has(teacher));
+            
+            if (freeTeachers.length === 0) {
+                resultDiv.innerHTML = `
+                    <div class="report-result">
+                        <h4>📊 Результат</h4>
+                        <p style="color: #6c757d;">${dayName}, ${lessonNum} урок: <strong>Всі вчителі зайняті</strong></p>
+                    </div>
+                `;
+            } else {
+                let html = `
+                    <div class="report-result">
+                        <h4>📊 Вільні вчителі: ${dayName}, ${lessonNum} урок</h4>
+                        <p style="color: #6c757d; margin-bottom: 15px;">Знайдено вільних вчителів: <strong>${freeTeachers.length}</strong></p>
+                        <div class="teacher-list">
+                `;
+                
+                freeTeachers.sort().forEach(teacher => {
+                    // Знаходимо предмети цього вчителя
+                    const teacherSubjects = subjects.filter(s => s.teacher === teacher).map(s => s.name).join(', ');
+                    html += `
+                        <div class="teacher-item">
+                            <span>👨‍🏫 ${teacher}</span>
+                            <span style="font-size: 12px; opacity: 0.9;">${teacherSubjects}</span>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+                
+                resultDiv.innerHTML = html;
+            }
+        }
+
+        function showTeacherSchedule() {
+            const teacherName = document.getElementById('reportTeacher').value;
+            const resultDiv = document.getElementById('teacherScheduleResult');
+            
+            if (!teacherName) {
+                resultDiv.innerHTML = '<p style="color: #dc3545;">⚠️ Будь ласка, оберіть вчителя</p>';
+                return;
+            }
+            
+            // Збираємо розклад вчителя
+            const teacherSchedule = {};
+            
+            days.forEach((day, dayIndex) => {
+                teacherSchedule[dayIndex] = {};
+                for (let lessonIndex = 0; lessonIndex < lessons; lessonIndex++) {
+                    teacherSchedule[dayIndex][lessonIndex] = [];
+                }
+            });
+            
+            // Проходимо по всіх класах і збираємо уроки вчителя
+            classes.forEach(cls => {
+                Object.keys(schedules[cls.id]).forEach(key => {
+                    const [dayIndex, lessonIndex] = key.split('-').map(Number);
+                    const lesson = schedules[cls.id][key];
+                    
+                    if (Array.isArray(lesson)) {
+                        lesson.forEach(les => {
+                            if (les.teacher === teacherName) {
+                                teacherSchedule[dayIndex][lessonIndex].push({
+                                    className: cls.name,
+                                    subjectName: les.name
+                                });
+                            }
+                        });
+                    } else if (lesson && lesson.teacher === teacherName) {
+                        teacherSchedule[dayIndex][lessonIndex].push({
+                            className: cls.name,
+                            subjectName: lesson.name
+                        });
+                    }
+                });
+            });
+            
+            // Знаходимо предмети вчителя
+            const teacherSubjects = subjects.filter(s => s.teacher === teacherName);
+            const subjectsText = teacherSubjects.map(s => s.name).join(', ');
+            
+            // Генеруємо таблицю
+            let html = `
+                <div class="report-result">
+                    <h4>👨‍🏫 Розклад вчителя: ${teacherName}</h4>
+                    <p style="color: #6c757d; margin-bottom: 15px;">Предмети: <strong>${subjectsText}</strong></p>
+                    <table class="teacher-schedule-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Урок</th>
+            `;
+            
+            days.forEach(day => {
+                html += `<th>${day}</th>`;
+            });
+            
+            html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            for (let lessonIndex = 0; lessonIndex < lessons; lessonIndex++) {
+                html += `<tr><td><strong>${lessonIndex + 1}</strong></td>`;
+                
+                days.forEach((day, dayIndex) => {
+                    const lessonsAtTime = teacherSchedule[dayIndex][lessonIndex];
+                    
+                    if (lessonsAtTime.length > 0) {
+                        html += `<td class="has-lesson">`;
+                        lessonsAtTime.forEach((lesson, idx) => {
+                            html += `
+                                <div style="margin-bottom: ${idx < lessonsAtTime.length - 1 ? '5px' : '0'};">
+                                    <div>${lesson.subjectName}</div>
+                                    <div class="class-name">${lesson.className}</div>
+                                </div>
+                            `;
+                        });
+                        html += `</td>`;
+                    } else {
+                        html += `<td class="no-lesson">вікно</td>`;
+                    }
+                });
+                
+                html += `</tr>`;
+            }
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
+        }
+
+        function updateTeachersList() {
+            const teacherSelect = document.getElementById('reportTeacher');
+            
+            // Збираємо всіх унікальних вчителів
+            const allTeachers = new Set();
+            subjects.forEach(subject => {
+                allTeachers.add(subject.teacher);
+            });
+            
+            // Сортуємо і генеруємо опції
+            const sortedTeachers = [...allTeachers].sort();
+            
+            let html = '<option value="">-- Оберіть вчителя --</option>';
+            sortedTeachers.forEach(teacher => {
+                html += `<option value="${teacher}">${teacher}</option>`;
+            });
+            
+            teacherSelect.innerHTML = html;
+        }
+
         // Завантаження даних з localStorage при запуску
         loadFromLocalStorage();
 
         renderClasses();
         renderSubjects();
         renderSchedules();
+        updateTeachersList();
     </script>
 </body>
 </html>
