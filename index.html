@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 3.1</title>
+    <title>Розклад уроків v 3.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -1135,6 +1135,36 @@
             }
         }
 
+        function editClass(id) {
+            const classItem = classes.find(c => c.id === id);
+            if (!classItem) return;
+            
+            // Запитуємо нову назву класу
+            const newName = prompt('Введіть нову назву класу:', classItem.name);
+            if (newName === null) return; // Користувач натиснув "Скасувати"
+            
+            const trimmedName = newName.trim();
+            if (!trimmedName) {
+                alert('⚠️ Назва класу не може бути порожньою');
+                return;
+            }
+            
+            // Зберігаємо стару назву
+            const oldName = classItem.name;
+            
+            // Оновлюємо назву класу
+            classItem.name = trimmedName;
+            
+            // Оновлюємо інтерфейс
+            renderClasses();
+            renderSchedules();
+            
+            // Автозбереження
+            saveToLocalStorage();
+            
+            alert(`✅ Клас перейменовано!\n\n"${oldName}" → "${trimmedName}"`);
+        }
+
         function addSubject() {
             const name = document.getElementById('subjectName').value.trim();
             const teacher = document.getElementById('teacherName').value.trim();
@@ -1191,6 +1221,72 @@
             }
         }
 
+        function editSubject(id) {
+            const subject = subjects.find(s => s.id === id);
+            if (!subject) return;
+            
+            // Запитуємо нову назву предмету
+            const newName = prompt('Введіть нову назву предмету:', subject.name);
+            if (newName === null) return; // Користувач натиснув "Скасувати"
+            
+            const trimmedName = newName.trim();
+            if (!trimmedName) {
+                alert('⚠️ Назва предмету не може бути порожньою');
+                return;
+            }
+            
+            // Запитуємо нове ім'я вчителя
+            const newTeacher = prompt('Введіть ім\'я вчителя:', subject.teacher);
+            if (newTeacher === null) return; // Користувач натиснув "Скасувати"
+            
+            const trimmedTeacher = newTeacher.trim();
+            if (!trimmedTeacher) {
+                alert('⚠️ Ім\'я вчителя не може бути порожнім');
+                return;
+            }
+            
+            // Зберігаємо старі значення для оновлення розкладу
+            const oldName = subject.name;
+            const oldTeacher = subject.teacher;
+            
+            // Оновлюємо предмет
+            subject.name = trimmedName;
+            subject.teacher = trimmedTeacher;
+            
+            // Оновлюємо всі уроки в розкладі
+            Object.keys(schedules).forEach(classId => {
+                Object.keys(schedules[classId]).forEach(key => {
+                    const lesson = schedules[classId][key];
+                    
+                    if (Array.isArray(lesson)) {
+                        // Обробляємо підгрупи
+                        lesson.forEach(les => {
+                            if (les.subjectId === id) {
+                                les.name = trimmedName;
+                                les.teacher = trimmedTeacher;
+                            }
+                        });
+                    } else if (lesson && lesson.subjectId === id) {
+                        // Звичайний урок
+                        lesson.name = trimmedName;
+                        lesson.teacher = trimmedTeacher;
+                    }
+                });
+            });
+            
+            // Оновлюємо інтерфейс
+            renderSubjects();
+            renderSchedules();
+            
+            // Автозбереження
+            saveToLocalStorage();
+            
+            // Оновлюємо список вчителів в звітах
+            updateTeachersList();
+            
+            alert(`✅ Предмет оновлено!\n\n"${oldName}" (${oldTeacher})\n↓\n"${trimmedName}" (${trimmedTeacher})`);
+        }
+
         function renderClasses() {
             const list = document.getElementById('classList');
             
@@ -1203,6 +1299,7 @@
                 <div class="class-card">
                     <h3>${cls.name}</h3>
                     <div class="class-card-actions">
+                        <button class="btn btn-primary" onclick="editClass(${cls.id})" style="padding: 8px 12px;">✏️ Редагувати</button>
                         <button class="btn btn-danger" onclick="removeClass(${cls.id})">Видалити</button>
                     </div>
                 </div>
@@ -1274,6 +1371,7 @@
                                     <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, -1, event);" title="Зменшити кількість годин">−</button>
                                     <button class="btn-hour-control" onclick="changeSubjectHours(${subject.id}, 1, event);" title="Збільшити кількість годин">+</button>
                                 </div>
+                                <button class="btn btn-primary" onclick="editSubject(${subject.id})" style="padding: 8px 12px;">✏️ Редагувати</button>
                                 <button class="btn btn-danger" onclick="removeSubject(${subject.id})">Видалити</button>
                             </div>
                         </div>
