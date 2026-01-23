@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 3.0</title>
+    <title>Розклад уроків v 3.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
 
@@ -784,6 +784,52 @@
             font-weight: 600;
         }
 
+        .workload-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .workload-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #667eea;
+        }
+
+        .workload-table td {
+            padding: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .workload-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .workload-bar {
+            height: 20px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .workload-light {
+            background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .workload-medium {
+            background: linear-gradient(90deg, #fee140 0%, #fa709a 100%);
+        }
+
+        .workload-high {
+            background: linear-gradient(90deg, #fa709a 0%, #f093fb 100%);
+        }
+
         .footer {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -943,7 +989,7 @@
             </div>
             
             <!-- Звіт 2: Розклад вчителя -->
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                 <h3 style="margin-bottom: 15px; color: #333;">👨‍🏫 Розклад вчителя</h3>
                 <p style="color: #6c757d; margin-bottom: 15px;">Оберіть вчителя, щоб побачити його повний розклад на тиждень</p>
                 
@@ -957,6 +1003,16 @@
                 <button class="btn btn-primary" onclick="showTeacherSchedule()">📅 Показати розклад</button>
                 
                 <div id="teacherScheduleResult" style="margin-top: 20px;"></div>
+            </div>
+            
+            <!-- Звіт 3: Навантаження вчителів -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px; color: #333;">📊 Навантаження вчителів</h3>
+                <p style="color: #6c757d; margin-bottom: 15px;">Загальна кількість годин у кожного вчителя на тиждень</p>
+                
+                <button class="btn btn-primary" onclick="showTeachersWorkload()">📈 Показати навантаження</button>
+                
+                <div id="teachersWorkloadResult" style="margin-top: 20px;"></div>
             </div>
         </div>
 
@@ -3105,6 +3161,145 @@
             });
             
             teacherSelect.innerHTML = html;
+        }
+
+        function showTeachersWorkload() {
+            const resultDiv = document.getElementById('teachersWorkloadResult');
+            
+            if (subjects.length === 0) {
+                resultDiv.innerHTML = '<p style="color: #dc3545;">⚠️ Немає предметів для аналізу</p>';
+                return;
+            }
+            
+            // Збираємо дані про навантаження вчителів
+            const teachersData = {};
+            
+            subjects.forEach(subject => {
+                if (!teachersData[subject.teacher]) {
+                    teachersData[subject.teacher] = {
+                        subjects: [],
+                        totalPlanned: 0,
+                        totalScheduled: 0
+                    };
+                }
+                
+                // Підраховуємо заплановані години
+                teachersData[subject.teacher].totalPlanned += subject.hours;
+                teachersData[subject.teacher].subjects.push({
+                    name: subject.name,
+                    hours: subject.hours
+                });
+            });
+            
+            // Підраховуємо фактично розміщені уроки
+            classes.forEach(cls => {
+                Object.values(schedules[cls.id]).forEach(slot => {
+                    if (Array.isArray(slot)) {
+                        slot.forEach(lesson => {
+                            const teacher = lesson.teacher;
+                            if (teachersData[teacher]) {
+                                teachersData[teacher].totalScheduled++;
+                            }
+                        });
+                    } else if (slot) {
+                        const teacher = slot.teacher;
+                        if (teachersData[teacher]) {
+                            teachersData[teacher].totalScheduled++;
+                        }
+                    }
+                });
+            });
+            
+            // Сортуємо вчителів за навантаженням (спадання)
+            const sortedTeachers = Object.entries(teachersData).sort((a, b) => b[1].totalPlanned - a[1].totalPlanned);
+            
+            // Знаходимо максимальне навантаження для масштабування графіків
+            const maxHours = Math.max(...sortedTeachers.map(([_, data]) => data.totalPlanned));
+            
+            // Підраховуємо статистику
+            const totalTeachers = sortedTeachers.length;
+            const totalHours = sortedTeachers.reduce((sum, [_, data]) => sum + data.totalPlanned, 0);
+            const avgHours = totalHours / totalTeachers;
+            const totalScheduledHours = sortedTeachers.reduce((sum, [_, data]) => sum + data.totalScheduled, 0);
+            
+            // Генеруємо HTML
+            let html = `
+                <div class="report-result">
+                    <h4>📊 Загальна статистика</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${totalTeachers}</div>
+                            <div style="color: #6c757d; font-size: 14px;">Вчителів</div>
+                        </div>
+                        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #f57c00;">${totalHours}</div>
+                            <div style="color: #6c757d; font-size: 14px;">Всього годин</div>
+                        </div>
+                        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #43a047;">${avgHours.toFixed(1)}</div>
+                            <div style="color: #6c757d; font-size: 14px;">Середнє навантаження</div>
+                        </div>
+                        <div style="background: #fce4ec; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #e91e63;">${totalScheduledHours}</div>
+                            <div style="color: #6c757d; font-size: 14px;">Розміщено в розкладі</div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin-top: 20px;">👥 Детальне навантаження по вчителях</h4>
+                    <table class="workload-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">Вчитель</th>
+                                <th style="width: 35%;">Предмети</th>
+                                <th style="width: 15%; text-align: center;">Годин/тиждень</th>
+                                <th style="width: 20%;">Навантаження</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            sortedTeachers.forEach(([teacher, data]) => {
+                const percentage = (data.totalPlanned / maxHours) * 100;
+                const scheduledPercentage = data.totalScheduled > 0 ? (data.totalScheduled / data.totalPlanned) * 100 : 0;
+                
+                // Визначаємо клас навантаження
+                let workloadClass = 'workload-light';
+                if (data.totalPlanned > avgHours * 1.2) {
+                    workloadClass = 'workload-high';
+                } else if (data.totalPlanned > avgHours * 0.8) {
+                    workloadClass = 'workload-medium';
+                }
+                
+                const subjectsList = data.subjects.map(s => `${s.name} (${s.hours})`).join(', ');
+                
+                html += `
+                    <tr>
+                        <td style="font-weight: 600;">${teacher}</td>
+                        <td style="font-size: 13px; color: #6c757d;">${subjectsList}</td>
+                        <td style="text-align: center;">
+                            <strong style="color: #667eea;">${data.totalScheduled}</strong>/<span style="color: #6c757d;">${data.totalPlanned}</span>
+                        </td>
+                        <td>
+                            <div style="background: #e9ecef; border-radius: 4px; overflow: hidden; height: 20px;">
+                                <div class="workload-bar ${workloadClass}" style="width: ${percentage}%;" title="${data.totalPlanned} годин"></div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                    <p style="color: #6c757d; font-size: 12px; margin-top: 15px;">
+                        💡 Підказка: <span style="color: #43a047;">●</span> низьке навантаження, 
+                        <span style="color: #f57c00;">●</span> середнє навантаження, 
+                        <span style="color: #e91e63;">●</span> високе навантаження
+                    </p>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
         }
 
         // Завантаження даних з localStorage при запуску
