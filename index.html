@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 4.0.1</title>
+    <title>Розклад уроків v 4.0.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -3703,91 +3703,99 @@
             printContainer.style.padding = '20px';
             printContainer.style.fontFamily = 'Arial, sans-serif';
             
-            // Заголовок
-            let html = `
-                <h1 style="text-align: center; color: #333; margin-bottom: 30px; font-size: 24px;">
-                    Розклад уроків
-                </h1>
-            `;
+            let isFirstPage = true;
 
             // Генеруємо розклад для кожного класу
-            classes.forEach((cls, index) => {
-                if (index > 0) {
-                    html += '<div style="page-break-before: always; margin-top: 40px;"></div>';
-                }
+            classes.forEach((cls) => {
+                // Розбиваємо дні по 2 на сторінку (Пн-Вт, Ср-Чт, Пт)
+                const dayPairs = [
+                    [0, 1],  // Понеділок, Вівторок
+                    [2, 3],  // Середа, Четвер
+                    [4]      // П'ятниця
+                ];
                 
-                html += `
-                    <h2 style="color: #667eea; margin-bottom: 15px; font-size: 20px;">
-                        Клас: ${cls.name}
-                    </h2>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px;">
-                        <thead>
-                            <tr style="background: #667eea;">
-                                <th style="border: 1px solid #000; padding: 8px; color: white; font-weight: bold; text-align: center; width: 60px;">Урок</th>
-                `;
-                
-                days.forEach(day => {
-                    html += `<th style="border: 1px solid #000; padding: 8px; color: white; font-weight: bold; text-align: center;">${day}</th>`;
-                });
-                
-                html += `
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                // Генеруємо рядки уроків
-                for (let lessonNum = 0; lessonNum < lessons; lessonNum++) {
-                    html += `<tr>`;
-                    html += `<td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background: #f0f0f0;">${lessonNum + 1}</td>`;
+                dayPairs.forEach((dayIndices, pairIndex) => {
+                    if (!isFirstPage) {
+                        printContainer.innerHTML += '<div style="page-break-before: always;"></div>';
+                    }
+                    isFirstPage = false;
                     
-                    days.forEach((day, dayIndex) => {
-                        const key = `${dayIndex}-${lessonNum}`;
-                        const lesson = schedules[cls.id][key];
-                        
-                        let cellContent = '';
-                        let bgColor = '#ffffff';
-                        
-                        if (lesson) {
-                            if (Array.isArray(lesson)) {
-                                // Підгрупи
-                                cellContent = '<div>';
-                                lesson.forEach((les, idx) => {
-                                    const color = getSubjectColor(les.subjectId);
-                                    cellContent += `
-                                        <div style="background: ${color}; padding: 4px; margin-bottom: ${idx < lesson.length - 1 ? '3px' : '0'}; border-radius: 3px;">
-                                            <strong>${les.name}</strong><br>
-                                            <span style="font-size: 10px;">${les.teacher}</span>
-                                        </div>
-                                    `;
-                                });
-                                cellContent += '</div>';
-                            } else {
-                                // Звичайний урок
-                                const color = getSubjectColor(lesson.subjectId);
-                                bgColor = color;
-                                cellContent = `
-                                    <strong>${lesson.name}</strong><br>
-                                    <span style="font-size: 10px;">${lesson.teacher}</span>
-                                `;
-                            }
-                        } else {
-                            cellContent = '&nbsp;';
-                        }
-                        
-                        html += `<td style="border: 1px solid #000; padding: 8px; background: ${bgColor}; text-align: center; vertical-align: middle; min-height: 50px;">${cellContent}</td>`;
+                    printContainer.innerHTML += `
+                        <div style="margin-bottom: 20px;">
+                            <h1 style="text-align: center; color: #333; margin-bottom: 15px; font-size: 22px;">
+                                Розклад уроків - ${cls.name}
+                            </h1>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: #667eea;">
+                                        <th style="border: 1px solid #000; padding: 8px; color: white; font-weight: bold; text-align: center; width: 60px;">Урок</th>
+                    `;
+                    
+                    // Додаємо заголовки тільки для тих днів, що на цій сторінці
+                    dayIndices.forEach(dayIndex => {
+                        printContainer.innerHTML += `<th style="border: 1px solid #000; padding: 8px; color: white; font-weight: bold; text-align: center;">${days[dayIndex]}</th>`;
                     });
                     
-                    html += `</tr>`;
-                }
-                
-                html += `
-                        </tbody>
-                    </table>
-                `;
+                    printContainer.innerHTML += `
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    // Генеруємо рядки уроків
+                    for (let lessonNum = 0; lessonNum < lessons; lessonNum++) {
+                        printContainer.innerHTML += `<tr>`;
+                        printContainer.innerHTML += `<td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background: #f0f0f0;">${lessonNum + 1}</td>`;
+                        
+                        // Додаємо комірки тільки для тих днів, що на цій сторінці
+                        dayIndices.forEach(dayIndex => {
+                            const key = `${dayIndex}-${lessonNum}`;
+                            const lesson = schedules[cls.id][key];
+                            
+                            let cellContent = '';
+                            let bgColor = '#ffffff';
+                            
+                            if (lesson) {
+                                if (Array.isArray(lesson)) {
+                                    // Підгрупи
+                                    cellContent = '<div>';
+                                    lesson.forEach((les, idx) => {
+                                        const color = getSubjectColor(les.subjectId);
+                                        cellContent += `
+                                            <div style="background: ${color}; padding: 4px; margin-bottom: ${idx < lesson.length - 1 ? '3px' : '0'}; border-radius: 3px;">
+                                                <strong>${les.name}</strong><br>
+                                                <span style="font-size: 10px;">${les.teacher}</span>
+                                            </div>
+                                        `;
+                                    });
+                                    cellContent += '</div>';
+                                } else {
+                                    // Звичайний урок
+                                    const color = getSubjectColor(lesson.subjectId);
+                                    bgColor = color;
+                                    cellContent = `
+                                        <strong>${lesson.name}</strong><br>
+                                        <span style="font-size: 10px;">${lesson.teacher}</span>
+                                    `;
+                                }
+                            } else {
+                                cellContent = '&nbsp;';
+                            }
+                            
+                            printContainer.innerHTML += `<td style="border: 1px solid #000; padding: 8px; background: ${bgColor}; text-align: center; vertical-align: middle; height: 60px;">${cellContent}</td>`;
+                        });
+                        
+                        printContainer.innerHTML += `</tr>`;
+                    }
+                    
+                    printContainer.innerHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
             });
             
-            printContainer.innerHTML = html;
             document.body.appendChild(printContainer);
             
             // Чекаємо поки контент відрендериться
