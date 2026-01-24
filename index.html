@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 4.2</title>
+    <title>Розклад уроків v 4.2.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -1225,9 +1225,27 @@
             if (confirm('Ви впевнені, що хочете видалити цей предмет?')) {
                 subjects = subjects.filter(s => s.id !== id);
                 
+                // Видаляємо всі уроки цього предмету з розкладу
                 Object.keys(schedules).forEach(classId => {
                     Object.keys(schedules[classId]).forEach(key => {
-                        if (schedules[classId][key].subjectId === id) {
+                        const slot = schedules[classId][key];
+                        
+                        // Якщо це масив (підгрупи)
+                        if (Array.isArray(slot)) {
+                            // Фільтруємо масив, видаляючи урок з цим subjectId
+                            schedules[classId][key] = slot.filter(lesson => lesson.subjectId !== id);
+                            
+                            // Якщо масив порожній, видаляємо весь слот
+                            if (schedules[classId][key].length === 0) {
+                                delete schedules[classId][key];
+                            }
+                            // Якщо залишився тільки один урок, перетворюємо масив в об'єкт
+                            else if (schedules[classId][key].length === 1) {
+                                schedules[classId][key] = schedules[classId][key][0];
+                            }
+                        } 
+                        // Якщо це один урок
+                        else if (slot && slot.subjectId === id) {
                             delete schedules[classId][key];
                         }
                     });
