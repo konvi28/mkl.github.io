@@ -6,8 +6,9 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 3.7.6</title>
+    <title>Розклад уроків v 4.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
 
         * {
@@ -957,6 +958,7 @@
                 <button class="btn btn-info" onclick="downloadScheduleTemplate()">📄 Завантажити шаблон</button>
                 <button class="btn btn-success" onclick="exportToExcel()">📊 Експорт в Excel</button>
                 <button class="btn btn-info" onclick="document.getElementById('excelInput').click()">📥 Імпорт з Excel</button>
+                <button class="btn btn-success" onclick="printScheduleToPDF()">🖨️ Друк в PDF</button>
                 <button class="btn btn-danger" onclick="clearDemoData()">🗑️ Видалити дані</button>
                 <button class="btn btn-info" onclick="checkTeacherConflicts()">🔍 Перевірка на збіг</button>
                 <button class="btn btn-info" id="magnifierButton" onclick="toggleMagnifier()">🔎 Лупа</button>
@@ -3680,6 +3682,142 @@
                   '   • Годин/тиждень - число\n' +
                   '4. Збережіть файл\n' +
                   '5. Імпортуйте через кнопку "📥 Імпорт"');
+        }
+
+        // Функція для друку розкладу в PDF
+        function printScheduleToPDF() {
+            if (classes.length === 0) {
+                alert('⚠️ Немає класів для друку');
+                return;
+            }
+
+            // Перевіряємо чи завантажена бібліотека
+            if (typeof html2pdf === 'undefined') {
+                alert('⏳ Завантаження бібліотеки PDF... Спробуйте ще раз через секунду.');
+                return;
+            }
+
+            // Створюємо тимчасовий контейнер для друку
+            const printContainer = document.createElement('div');
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px';
+            printContainer.style.background = 'white';
+            printContainer.style.width = '1400px';
+            printContainer.style.padding = '40px';
+            
+            // Заголовок
+            let html = `
+                <div style="font-family: Arial, sans-serif;">
+                    <h1 style="text-align: center; color: #333; margin-bottom: 30px; font-size: 28px;">
+                        Розклад уроків
+                    </h1>
+            `;
+
+            // Генеруємо розклад для кожного класу
+            classes.forEach((cls, index) => {
+                if (index > 0) {
+                    html += '<div style="page-break-before: always;"></div>';
+                }
+                
+                html += `
+                    <h2 style="color: #667eea; margin-bottom: 20px; font-size: 24px;">
+                        ${cls.name}
+                    </h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <th style="border: 2px solid #333; padding: 12px; color: white; font-weight: bold; text-align: center; width: 100px;">Урок</th>
+                `;
+                
+                days.forEach(day => {
+                    html += `<th style="border: 2px solid #333; padding: 12px; color: white; font-weight: bold; text-align: center;">${day}</th>`;
+                });
+                
+                html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                // Генеруємо рядки уроків
+                for (let lessonNum = 0; lessonNum < lessons; lessonNum++) {
+                    html += `<tr>`;
+                    html += `<td style="border: 2px solid #333; padding: 12px; text-align: center; font-weight: bold; background: #f8f9fa;">${lessonNum + 1}</td>`;
+                    
+                    days.forEach((day, dayIndex) => {
+                        const key = `${dayIndex}-${lessonNum}`;
+                        const lesson = schedules[cls.id][key];
+                        
+                        let cellContent = '';
+                        let bgColor = '#ffffff';
+                        
+                        if (lesson) {
+                            if (Array.isArray(lesson)) {
+                                // Підгрупи
+                                lesson.forEach((les, idx) => {
+                                    const color = getSubjectColor(les.subjectId);
+                                    cellContent += `
+                                        <div style="background: ${color}; padding: 8px; margin-bottom: ${idx < lesson.length - 1 ? '5px' : '0'}; border-radius: 4px;">
+                                            <div style="font-weight: bold; font-size: 14px;">${les.name}</div>
+                                            <div style="font-size: 12px; opacity: 0.9;">${les.teacher}</div>
+                                        </div>
+                                    `;
+                                });
+                            } else {
+                                // Звичайний урок
+                                const color = getSubjectColor(lesson.subjectId);
+                                bgColor = color;
+                                cellContent = `
+                                    <div style="font-weight: bold; font-size: 14px;">${lesson.name}</div>
+                                    <div style="font-size: 12px; opacity: 0.9;">${lesson.teacher}</div>
+                                `;
+                            }
+                        }
+                        
+                        html += `<td style="border: 2px solid #333; padding: 12px; background: ${bgColor}; vertical-align: middle;">${cellContent}</td>`;
+                    });
+                    
+                    html += `</tr>`;
+                }
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+            });
+            
+            html += '</div>';
+            
+            printContainer.innerHTML = html;
+            document.body.appendChild(printContainer);
+            
+            // Налаштування PDF
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `rozklad_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'landscape'  // Горизонтальна орієнтація
+                },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+            
+            // Генерація PDF
+            html2pdf().set(opt).from(printContainer).save().then(() => {
+                document.body.removeChild(printContainer);
+                alert('✅ PDF успішно створено!');
+            }).catch(error => {
+                document.body.removeChild(printContainer);
+                alert('❌ Помилка при створенні PDF: ' + error.message);
+                console.error('PDF error:', error);
+            });
         }
 
         function downloadScheduleTemplate() {
