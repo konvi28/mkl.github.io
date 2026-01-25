@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 4.5</title>
+    <title>Розклад уроків v 4.5.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -994,8 +994,7 @@
             <div id="sortButtons" style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 8px; display: none;">
                 <strong style="color: #333; margin-right: 10px;">📋 Сортувати:</strong>
                 <button class="btn btn-secondary" onclick="sortSubjects('name')" style="margin-right: 5px;">📝 За назвою</button>
-                <button class="btn btn-secondary" onclick="sortSubjects('teacher')" style="margin-right: 5px;">👨‍🏫 За вчителем</button>
-                <button class="btn btn-secondary" onclick="sortSubjects('hours')">🕐 За годинами</button>
+                <button class="btn btn-secondary" onclick="sortSubjects('teacher')">👨‍🏫 За вчителем</button>
             </div>
             
             <div id="subjectList" class="subject-list"></div>
@@ -1428,9 +1427,6 @@
             } else if (sortBy === 'teacher') {
                 // Сортування за вчителем (А-Я)
                 subjects.sort((a, b) => a.teacher.localeCompare(b.teacher, 'uk'));
-            } else if (sortBy === 'hours') {
-                // Сортування за кількістю годин (від більшого до меншого)
-                subjects.sort((a, b) => b.hours - a.hours);
             }
             
             // Перерендерюємо список
