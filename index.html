@@ -6,7 +6,7 @@
     <link rel="icon" type="image/webp" href="logo.webp">
     <link rel="shortcut icon" type="image/webp" href="logo.webp">
     <link rel="apple-touch-icon" href="logo.webp">
-    <title>Розклад уроків v 4.2.3</title>
+    <title>Розклад уроків v 4.2.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -498,6 +498,15 @@
 
         /* Жирна границя між днями тижня (після 8-го уроку) */
         .schedule-table tr.last-lesson-of-day td {
+            border-bottom: 3px solid #333;
+        }
+        
+        /* Жирна границя для колонки "День" між днями */
+        .schedule-table td[rowspan].day-0,
+        .schedule-table td[rowspan].day-1,
+        .schedule-table td[rowspan].day-2,
+        .schedule-table td[rowspan].day-3,
+        .schedule-table td[rowspan].day-4 {
             border-bottom: 3px solid #333;
         }
 
